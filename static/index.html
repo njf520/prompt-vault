@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PromptVault</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0d0d0f;
+    --surface: #141416;
+    --surface2: #1c1c20;
+    --surface3: #242428;
+    --border: #2a2a30;
+    --accent: #7fff6e;
+    --accent2: #3dffd0;
+    --accent3: #ff6b6b;
+    --text: #e8e8ec;
+    --muted: #6b6b78;
+    --muted2: #9999a8;
+    --font-display: 'Syne', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+    --radius: 8px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Header ── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 28px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 20px;
+    letter-spacing: -0.5px;
+    color: var(--text);
+  }
+
+  .logo-icon {
+    width: 32px; height: 32px;
+    background: var(--accent);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+
+  .logo span { color: var(--accent); }
+
+  .header-actions { display: flex; gap: 10px; align-items: center; }
+
+  /* ── Buttons ── */
+  .btn {
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 7px 14px;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-primary { background: var(--accent); color: #0d0d0f; }
+  .btn-primary:hover { background: #6fee5d; transform: translateY(-1px); }
+  .btn-ghost { background: transparent; color: var(--muted2); border: 1px solid var(--border); }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-danger { background: transparent; color: var(--accent3); border: 1px solid var(--accent3); }
+  .btn-danger:hover { background: var(--accent3); color: white; }
+  .btn-sm { padding: 4px 10px; font-size: 11px; }
+
+  /* ── Layout ── */
+  .main { display: flex; flex: 1; height: calc(100vh - 61px); overflow: hidden; }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 280px;
+    min-width: 280px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .sidebar-top {
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .search-box {
+    position: relative;
+  }
+
+  .search-box input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px 12px 8px 32px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .search-box input:focus { border-color: var(--accent); }
+  .search-box::before {
+    content: '⌕';
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: 15px;
+  }
+
+  .tag-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .tag-chip {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: 11px;
+    cursor: pointer;
+    color: var(--muted2);
+    transition: all 0.15s;
+  }
+  .tag-chip:hover { border-color: var(--accent); color: var(--accent); }
+  .tag-chip.active { background: var(--accent); color: #0d0d0f; border-color: var(--accent); font-weight: 500; }
+
+  .prompt-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+  }
+  .prompt-list::-webkit-scrollbar { width: 4px; }
+  .prompt-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  .prompt-item {
+    border-radius: var(--radius);
+    padding: 12px;
+    margin-bottom: 4px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.12s;
+  }
+  .prompt-item:hover { background: var(--surface2); border-color: var(--border); }
+  .prompt-item.active { background: var(--surface2); border-color: var(--accent); }
+
+  .prompt-item-name {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--text);
+    margin-bottom: 5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .prompt-item-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted);
+    font-size: 11px;
+  }
+
+  .version-badge {
+    background: var(--surface3);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--accent2);
+  }
+
+  .prompt-tags {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    margin-top: 5px;
+  }
+
+  .tag-dot {
+    background: var(--surface3);
+    border-radius: 3px;
+    padding: 1px 5px;
+    font-size: 10px;
+    color: var(--muted2);
+  }
+
+  /* ── Main Content ── */
+  .content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .content::-webkit-scrollbar { width: 4px; }
+  .content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  /* ── Card ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    gap: 16px;
+  }
+
+  .card-title {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 22px;
+    letter-spacing: -0.5px;
+    line-height: 1.2;
+  }
+
+  .card-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+  /* ── Prompt Content Box ── */
+  .prompt-content {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    font-size: 13px;
+    line-height: 1.65;
+    color: var(--text);
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-family: var(--font-mono);
+    position: relative;
+  }
+
+  textarea.prompt-content {
+    width: 100%;
+    min-height: 120px;
+    resize: vertical;
+    outline: none;
+    cursor: text;
+  }
+  textarea.prompt-content:focus { border-color: var(--accent); }
+
+  /* ── Meta Row ── */
+  .meta-row {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+
+  .meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .meta-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  .meta-value {
+    font-size: 12px;
+    color: var(--text);
+  }
+
+  /* ── Version Timeline ── */
+  .timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .timeline-item {
+    display: flex;
+    gap: 16px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    border-radius: var(--radius);
+    padding: 12px;
+    transition: background 0.1s;
+  }
+  .timeline-item:hover { background: var(--surface2); }
+  .timeline-item.selected { background: var(--surface2); outline: 1px solid var(--accent); }
+
+  .timeline-dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--surface3);
+    border: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted2);
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .timeline-dot.latest { border-color: var(--accent); color: var(--accent); }
+
+  .timeline-body { flex: 1; min-width: 0; }
+
+  .timeline-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+
+  .timeline-version {
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--text);
+  }
+
+  .timeline-date {
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .timeline-notes {
+    font-size: 12px;
+    color: var(--muted2);
+    margin-top: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .timeline-hash {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 3px;
+    font-family: var(--font-mono);
+  }
+
+  /* ── Diff View ── */
+  .diff-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-break: break-all;
+    max-height: 320px;
+    overflow-y: auto;
+  }
+  .diff-add { color: var(--accent); background: rgba(127,255,110,0.06); display: block; }
+  .diff-del { color: var(--accent3); background: rgba(255,107,107,0.06); display: block; text-decoration: line-through; }
+  .diff-meta { color: var(--muted); }
+
+  /* ── Form ── */
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+
+  label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  input[type="text"], textarea, select {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 9px 12px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    outline: none;
+    transition: border-color 0.15s;
+    width: 100%;
+  }
+  input[type="text"]:focus, textarea:focus { border-color: var(--accent); }
+
+  /* ── Empty State ── */
+  .empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    color: var(--muted);
+    text-align: center;
+    padding: 60px;
+  }
+  .empty-icon { font-size: 48px; opacity: 0.3; }
+  .empty-title { font-family: var(--font-display); font-size: 18px; color: var(--muted2); }
+  .empty-sub { font-size: 13px; max-width: 320px; line-height: 1.6; }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--surface3);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 12px 18px;
+    font-size: 12px;
+    color: var(--accent);
+    z-index: 999;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.25s;
+    pointer-events: none;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  /* ── Modal ── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px;
+    width: 560px;
+    max-width: 95vw;
+    max-height: 90vh;
+    overflow-y: auto;
+    transform: scale(0.96);
+    transition: transform 0.2s;
+  }
+  .modal-overlay.open .modal { transform: scale(1); }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 22px;
+  }
+  .modal-title {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 18px;
+  }
+  .modal-close {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 20px;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .modal-close:hover { color: var(--text); }
+
+  /* ── Section label ── */
+  .section-label {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--text);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .copy-btn {
+    position: absolute;
+    top: 10px; right: 10px;
+    background: var(--surface3);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 4px 8px;
+    font-size: 10px;
+    color: var(--muted2);
+    cursor: pointer;
+    font-family: var(--font-mono);
+  }
+  .copy-btn:hover { color: var(--accent); border-color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">⚑</div>
+    Prompt<span>Vault</span>
+  </div>
+  <div class="header-actions">
+    <button class="btn btn-ghost btn-sm" onclick="seedDemo()">⚡ Load Demo Data</button>
+    <button class="btn btn-primary" onclick="openNewModal()">+ New Prompt</button>
+  </div>
+</header>
+
+<div class="main">
+  <div class="sidebar">
+    <div class="sidebar-top">
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Search prompts..." oninput="filterPrompts()" />
+      </div>
+      <div class="tag-filters" id="tagFilters"></div>
+    </div>
+    <div class="prompt-list" id="promptList">
+      <div class="empty-state" style="padding:40px 20px;">
+        <div class="empty-icon">⚑</div>
+        <div style="font-size:12px;color:var(--muted);text-align:center;">No prompts yet.<br/>Click "Load Demo Data" to start.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content" id="mainContent">
+    <div class="empty-state">
+      <div class="empty-icon">⚑</div>
+      <div class="empty-title">Select a prompt</div>
+      <div class="empty-sub">Choose a prompt from the sidebar, or create a new one to get started.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- New / Edit Modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModalOnOverlay(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">New Prompt</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="form-group">
+      <label>Name (slug, no spaces)</label>
+      <input type="text" id="formName" placeholder="e.g. customer-support-greeting" />
+    </div>
+    <div class="form-group">
+      <label>Content</label>
+      <textarea id="formContent" rows="6" placeholder="Enter your prompt here..."></textarea>
+    </div>
+    <div class="form-group">
+      <label>Target Model</label>
+      <input type="text" id="formModel" placeholder="e.g. gpt-4o, claude-sonnet-4-20250514" />
+    </div>
+    <div class="form-group">
+      <label>Tags (comma-separated)</label>
+      <input type="text" id="formTags" placeholder="e.g. support, v2, production" />
+    </div>
+    <div class="form-group">
+      <label>Commit Notes</label>
+      <input type="text" id="formNotes" placeholder="What changed and why?" />
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="submitModal()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let allPrompts = [];
+let selectedName = null;
+let activeTag = null;
+let modalMode = 'new'; // 'new' | 'edit'
+
+// ── API ───────────────────────────────────────────────────────────────────────
+async function api(method, path, body) {
+  const res = await fetch('/api' + path, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Unknown error' }));
+    throw new Error(err.detail || 'API error');
+  }
+  return res.json();
+}
+
+// ── Load ──────────────────────────────────────────────────────────────────────
+async function loadAll() {
+  const search = document.getElementById('searchInput').value;
+  const params = new URLSearchParams();
+  if (search) params.set('search', search);
+  if (activeTag) params.set('tag', activeTag);
+  try {
+    allPrompts = await api('GET', '/prompts?' + params);
+    renderList();
+    loadTags();
+  } catch(e) { toast('Failed to load: ' + e.message, true); }
+}
+
+async function loadTags() {
+  try {
+    const tags = await api('GET', '/tags');
+    const el = document.getElementById('tagFilters');
+    el.innerHTML = tags.map(t =>
+      `<span class="tag-chip ${activeTag===t?'active':''}" onclick="filterByTag('${t}')">${t}</span>`
+    ).join('');
+  } catch {}
+}
+
+function filterByTag(tag) {
+  activeTag = activeTag === tag ? null : tag;
+  loadAll();
+}
+
+function filterPrompts() { loadAll(); }
+
+function renderList() {
+  const el = document.getElementById('promptList');
+  if (!allPrompts.length) {
+    el.innerHTML = `<div class="empty-state" style="padding:40px 16px;">
+      <div class="empty-icon">⚑</div>
+      <div style="font-size:12px;color:var(--muted);text-align:center;">No prompts found.</div>
+    </div>`;
+    return;
+  }
+  el.innerHTML = allPrompts.map(p => `
+    <div class="prompt-item ${selectedName===p.name?'active':''}" onclick="selectPrompt('${p.name}')">
+      <div class="prompt-item-name">${p.name}</div>
+      <div class="prompt-item-meta">
+        <span class="version-badge">v${p.version_count}</span>
+        <span>${p.latest.model_target || '—'}</span>
+      </div>
+      <div class="prompt-tags">
+        ${(p.latest.tags||[]).map(t=>`<span class="tag-dot">${t}</span>`).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── Select & View ─────────────────────────────────────────────────────────────
+async function selectPrompt(name) {
+  selectedName = name;
+  renderList();
+  try {
+    const [data, history] = await Promise.all([
+      api('GET', '/prompts/' + name),
+      api('GET', '/prompts/' + name + '/history'),
+    ]);
+    renderDetail(data, history.versions);
+  } catch(e) { toast(e.message, true); }
+}
+
+function renderDetail(prompt, versions) {
+  const content = document.getElementById('mainContent');
+  const latest = versions[versions.length - 1];
+
+  content.innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">${prompt.name}</div>
+          <div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap;">
+            ${(prompt.tags||[]).map(t=>`<span class="tag-dot" style="font-size:11px;padding:2px 8px;">${t}</span>`).join('')}
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="btn btn-ghost btn-sm" onclick="openEditModal()">✎ Edit / Commit</button>
+          <button class="btn btn-danger btn-sm" onclick="deletePrompt('${prompt.name}')">✕ Delete</button>
+        </div>
+      </div>
+
+      <div class="section-label">Latest Version (v${prompt.version})</div>
+      <div class="prompt-content" style="position:relative;">
+        ${escHtml(prompt.content)}
+        <button class="copy-btn" onclick="copyText(${JSON.stringify(prompt.content)})">copy</button>
+      </div>
+
+      <div class="meta-row">
+        <div class="meta-item">
+          <div class="meta-label">Model</div>
+          <div class="meta-value">${prompt.model_target || '—'}</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">Hash</div>
+          <div class="meta-value" style="font-family:var(--font-mono);color:var(--accent2);">${prompt.hash}</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">Saved</div>
+          <div class="meta-value">${fmtDate(prompt.created_at)}</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">Notes</div>
+          <div class="meta-value">${prompt.notes || '—'}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="historyCard">
+      <div class="section-label">Version History</div>
+      <div class="timeline" id="timeline">
+        ${versions.map((v,i) => `
+          <div class="timeline-item ${i===versions.length-1?'selected':''}" id="tv${v.version}" onclick="showDiff(${v.version}, ${versions.length})">
+            <div class="timeline-dot ${i===versions.length-1?'latest':''}">v${v.version}</div>
+            <div class="timeline-body">
+              <div class="timeline-header">
+                <span class="timeline-version">${i===versions.length-1?'<span style="color:var(--accent)">■ latest</span> · ':''}${escHtml(v.notes||'no commit notes')}</span>
+                <span class="timeline-date">${fmtDate(v.created_at)}</span>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:4px;">
+                ${(v.tags||[]).map(t=>`<span class="tag-dot">${t}</span>`).join('')}
+                ${v.model_target ? `<span class="tag-dot" style="color:var(--accent2);">${v.model_target}</span>` : ''}
+              </div>
+              <div class="timeline-hash"># ${v.hash}</div>
+            </div>
+          </div>
+        `).reverse().join('')}
+      </div>
+    </div>
+
+    <div class="card" id="diffCard" style="display:none;">
+      <div class="section-label" id="diffLabel">Diff</div>
+      <div class="diff-box" id="diffContent"></div>
+    </div>
+  `;
+}
+
+async function showDiff(v, total) {
+  if (v === total) { document.getElementById('diffCard').style.display = 'none'; return; }
+  try {
+    const d = await api('GET', `/prompts/${selectedName}/diff?v1=${v}&v2=${v+1}`);
+    const diffCard = document.getElementById('diffCard');
+    diffCard.style.display = '';
+    document.getElementById('diffLabel').textContent = `Diff: v${v} → v${v+1}`;
+    document.getElementById('diffContent').innerHTML = renderDiff(d.diff);
+  } catch(e) { toast(e.message, true); }
+}
+
+function renderDiff(raw) {
+  if (!raw) return '<span style="color:var(--muted)">No diff available.</span>';
+  return raw.split('\n').map(line => {
+    if (line.startsWith('+') && !line.startsWith('+++')) return `<span class="diff-add">${escHtml(line)}</span>`;
+    if (line.startsWith('-') && !line.startsWith('---')) return `<span class="diff-del">${escHtml(line)}</span>`;
+    if (line.startsWith('@')) return `<span class="diff-meta">${escHtml(line)}</span>`;
+    return escHtml(line);
+  }).join('\n');
+}
+
+// ── Modal ─────────────────────────────────────────────────────────────────────
+function openNewModal() {
+  modalMode = 'new';
+  document.getElementById('modalTitle').textContent = 'New Prompt';
+  document.getElementById('formName').value = '';
+  document.getElementById('formName').disabled = false;
+  document.getElementById('formContent').value = '';
+  document.getElementById('formModel').value = '';
+  document.getElementById('formTags').value = '';
+  document.getElementById('formNotes').value = '';
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+async function openEditModal() {
+  if (!selectedName) return;
+  modalMode = 'edit';
+  document.getElementById('modalTitle').textContent = `Commit new version → ${selectedName}`;
+  try {
+    const p = await api('GET', '/prompts/' + selectedName);
+    document.getElementById('formName').value = p.name;
+    document.getElementById('formName').disabled = true;
+    document.getElementById('formContent').value = p.content;
+    document.getElementById('formModel').value = p.model_target || '';
+    document.getElementById('formTags').value = (p.tags||[]).join(', ');
+    document.getElementById('formNotes').value = '';
+    document.getElementById('modalOverlay').classList.add('open');
+  } catch(e) { toast(e.message, true); }
+}
+
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+function closeModalOnOverlay(e) { if (e.target === document.getElementById('modalOverlay')) closeModal(); }
+
+async function submitModal() {
+  const name = document.getElementById('formName').value.trim().replace(/\s+/g,'-');
+  const content = document.getElementById('formContent').value.trim();
+  const model_target = document.getElementById('formModel').value.trim();
+  const tags = document.getElementById('formTags').value.split(',').map(t=>t.trim()).filter(Boolean);
+  const notes = document.getElementById('formNotes').value.trim();
+
+  if (!name || !content) { toast('Name and content are required', true); return; }
+
+  try {
+    if (modalMode === 'new') {
+      await api('POST', '/prompts', { name, content, tags, model_target, notes });
+      toast('✓ Prompt created');
+    } else {
+      await api('PUT', '/prompts/' + name, { content, tags, model_target, notes });
+      toast('✓ New version committed');
+    }
+    closeModal();
+    await loadAll();
+    selectPrompt(name);
+  } catch(e) { toast(e.message, true); }
+}
+
+async function deletePrompt(name) {
+  if (!confirm(`Delete "${name}" and all versions?`)) return;
+  try {
+    await api('DELETE', '/prompts/' + name);
+    selectedName = null;
+    document.getElementById('mainContent').innerHTML = `<div class="empty-state"><div class="empty-icon">⚑</div><div class="empty-title">Prompt deleted</div></div>`;
+    toast('Prompt deleted');
+    loadAll();
+  } catch(e) { toast(e.message, true); }
+}
+
+async function seedDemo() {
+  try {
+    await api('POST', '/seed');
+    await loadAll();
+    toast('⚡ Demo data loaded');
+  } catch(e) { toast(e.message, true); }
+}
+
+// ── Utils ─────────────────────────────────────────────────────────────────────
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function fmtDate(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+}
+
+function copyText(text) {
+  navigator.clipboard.writeText(text).then(() => toast('Copied to clipboard'));
+}
+
+function toast(msg, isErr=false) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.borderColor = isErr ? 'var(--accent3)' : 'var(--accent)';
+  el.style.color = isErr ? 'var(--accent3)' : 'var(--accent)';
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+loadAll();
+</script>
+</body>
+</html>
