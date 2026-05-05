@@ -13,7 +13,6 @@ import os
 import hashlib
 from datetime import datetime, timezone
 import difflib
-import re
 
 app = FastAPI(title="PromptVault", description="Version control for LLM prompts", version="1.0.0")
 
@@ -39,14 +38,14 @@ class PromptCreate(BaseModel):
     name: str
     content: str
     tags: list[str] = []
-    model_target: str = ""   # e.g. "gpt-4o", "claude-3-5-sonnet"
-    notes: str = ""
+    model_target: str = ""
+    notes: str
 
 class PromptUpdate(BaseModel):
     content: str
     tags: list[str] = []
     model_target: str = ""
-    notes: str = ""
+    notes: str
 
 # ── API Routes ────────────────────────────────────────────────────────────────
 
@@ -81,6 +80,8 @@ def create_prompt(prompt: PromptCreate):
     db = load_db()
     if prompt.name in db["prompts"]:
         raise HTTPException(400, f"Prompt '{prompt.name}' already exists. Use PUT to update.")
+    if not prompt.notes.strip():
+        raise HTTPException(400, "Commit notes are required.")
     entry = {
         "version": 1,
         "content": prompt.content,
@@ -101,10 +102,15 @@ def update_prompt(name: str, prompt: PromptUpdate):
     db = load_db()
     if name not in db["prompts"]:
         raise HTTPException(404, f"Prompt '{name}' not found.")
+    if not prompt.notes.strip():
+        raise HTTPException(400, "Commit notes are required.")
     versions = db["prompts"][name]
     last = versions[-1]
-    if last["content"] == prompt.content:
-        raise HTTPException(400, "No changes detected. Content is identical to last version.")
+    if (last["content"] == prompt.content and
+        last.get("model_target") == prompt.model_target and
+        last.get("tags") == prompt.tags and
+        last.get("notes") == prompt.notes):
+        raise HTTPException(400, "No changes detected. Nothing was modified.")
     new_version = len(versions) + 1
     entry = {
         "version": new_version,
@@ -129,7 +135,7 @@ def get_prompt(name: str, version: Optional[int] = Query(None)):
     versions = db["prompts"][name]
     if version:
         if version < 1 or version > len(versions):
-            raise HTTPException(400, f"Version {version} out of range (1–{len(versions)}).")
+            raise HTTPException(400, f"Version {version} out of range (1-{len(versions)}).")
         return {"name": name, **versions[version - 1]}
     return {"name": name, "version_count": len(versions), **versions[-1]}
 
